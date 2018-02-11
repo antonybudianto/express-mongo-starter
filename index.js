@@ -1,45 +1,30 @@
 const express = require('express');
 const fetch = require('node-fetch');
-const MongoClient = require('mongodb').MongoClient;
+
+const { connectDb } = require('./src/connect');
 
 const app = express();
+connectDb().then(db => startApp(db));
 
-// Connection URL
-const url = 'mongodb://db:27017';
-
-// Database Name
-const dbName = 'myproject';
-
-async function start() {
-  let client = null;
-
-  try {
-    // Use connect method to connect to the Server
-    client = await MongoClient.connect(url, {
-      reconnectTries: 60,
-      reconnectInterval: 1000
+function startApp (db) {
+  app.get('/hello', (req, res) => {
+    insertDocuments(db, () => {
+      res.send('OK')
     });
+  });
 
-    console.log('CONNECT OK')
-
-    const db = client.db(dbName);
-
-    app.get('/hello', (req, res) => {
-      insertDocuments(db, () => {
-        res.send('OK')
-      });
+  app.get('/query', (req, res) => {
+    const docs = db.collection('documents');
+    docs.find({}).toArray((err, arr) => {
+      if (err) {
+        return res.json({ err: err })
+      }
+      res.json({ data: arr })
     });
+  });
 
-    app.listen(3000);
-
-    console.log('API live at http://localhost:3000/hello');
-  } catch (err) {
-    console.log(err.stack);
-  }
-
-  if (client) {
-    client.close();
-  }
+  console.log('API live at http://localhost:3000/hello');
+  app.listen(3000);
 }
 
 const insertDocuments = function(db, callback) {
@@ -53,5 +38,3 @@ const insertDocuments = function(db, callback) {
     callback(result);
   });
 }
-
-start();
