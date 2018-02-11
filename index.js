@@ -1,5 +1,6 @@
 const express = require('express');
 const fetch = require('node-fetch');
+const bodyParser = require('body-parser');
 
 const { connectDb } = require('./src/connect');
 
@@ -7,19 +8,33 @@ const app = express();
 connectDb().then(db => startApp(db));
 
 function startApp (db) {
-  app.get('/hello', (req, res) => {
-    insertDocuments(db, () => {
-      res.send('OK')
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({ extended: true }));
+  app.post('/documents', (req, res) => {
+    const docs = db.collection('documents');
+    const data = {
+      text: req.body.text
+    };
+    docs.insert(data, (err, result) => {
+      if (err) {
+        return res.status(400).json({
+          error: 'Please check request body.'
+        });
+      }
+      res.status(201).json({
+        data: result.ops[0]
+      });
     });
   });
 
-  app.get('/query', (req, res) => {
+  app.get('/documents', (req, res) => {
     const docs = db.collection('documents');
     docs.find({}).toArray((err, arr) => {
       if (err) {
-        return res.json({ err: err })
+        return res.status(400)
+          .json({ err: 'Please check your query again' });
       }
-      res.json({ data: arr })
+      res.json({ data: arr });
     });
   });
 
