@@ -1,6 +1,7 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const bodyParser = require('body-parser');
+const mongo = require('mongodb');
 
 const { connectDb } = require('./src/connect');
 
@@ -10,6 +11,24 @@ connectDb().then(db => startApp(db));
 function startApp (db) {
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
+
+  app.delete('/documents/:id', (req, res) => {
+    const id = req.params.id;
+    const docs = db.collection('documents');
+    docs.deleteOne({ _id: mongo.ObjectId(id) }, (err, result) => {
+      if (err) {
+        console.log(err)
+        return res.status(400).json({
+          error: 'Please check the request'
+        });
+      }
+      res.status(202).json({
+        message: `Document ID ${id} is deleted.`,
+        result
+      });
+    })
+  });
+
   app.post('/documents', (req, res) => {
     const docs = db.collection('documents');
     const data = {
