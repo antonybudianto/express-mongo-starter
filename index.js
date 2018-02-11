@@ -12,6 +12,30 @@ function startApp (db) {
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
 
+  app.patch('/documents/:id', (req, res) => {
+    const id = req.params.id;
+    const docs = db.collection('documents');
+    docs.updateOne(
+      { _id: mongo.ObjectId(id) },
+      {
+        '$set': {
+          text: req.body.text
+        }
+      },
+      (err, result) => {
+        if (err) {
+          console.log(err)
+          return res.status(400).json({
+            error: 'Please check the request'
+          });
+        }
+        res.json({
+          message: `Document ID ${id} is updated.`,
+          result
+        });
+     })
+  });
+
   app.delete('/documents/:id', (req, res) => {
     const id = req.params.id;
     const docs = db.collection('documents');
